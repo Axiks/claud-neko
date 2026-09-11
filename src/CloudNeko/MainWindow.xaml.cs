@@ -81,6 +81,7 @@ public partial class MainWindow : Window
         _tray.ToggleAutoStartRequested += () => Dispatcher.Invoke(ToggleAutoStart);
         _tray.ExitRequested += () => Dispatcher.Invoke(Close);
         _tray.ShowRequested += () => Dispatcher.Invoke(BringToCurrentView);
+        _tray.HideRequested += () => Dispatcher.Invoke(Hide);
 
         _watcher.StateChanged += OnAggregateChanged;
         _watcher.PetRequested += () => Dispatcher.Invoke(TriggerPet);
@@ -462,6 +463,8 @@ public partial class MainWindow : Window
     }
 
     private void AutoStartMenuItem_Click(object sender, RoutedEventArgs e) => ToggleAutoStart();
+
+    private void HideToTray_Click(object sender, RoutedEventArgs e) => Hide();
 
     private void Exit_Click(object sender, RoutedEventArgs e) => Close();
 }

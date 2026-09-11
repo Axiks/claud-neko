@@ -27,6 +27,7 @@
                       IsCheckable="True"
                       Click="AutoStartMenuItem_Click"/>
             <Separator/>
+            <MenuItem Header="Сховати до трею" Click="HideToTray_Click"/>
             <MenuItem Header="Закрити" Click="Exit_Click"/>
         </ContextMenu>
     </Window.ContextMenu>

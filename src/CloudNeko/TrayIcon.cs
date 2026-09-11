@@ -18,6 +18,7 @@ public sealed class TrayIcon : IDisposable
     public event Action? ToggleAutoStartRequested;
     public event Action? ExitRequested;
     public event Action? ShowRequested;
+    public event Action? HideRequested;
 
     public TrayIcon()
     {
@@ -34,6 +35,10 @@ public sealed class TrayIcon : IDisposable
         menu.Items.Add(_autoStartItem);
 
         menu.Items.Add(new ToolStripSeparator());
+        var hideItem = new ToolStripMenuItem("Сховати до трею");
+        hideItem.Click += (_, _) => HideRequested?.Invoke();
+        menu.Items.Add(hideItem);
+
         var exitItem = new ToolStripMenuItem("Закрити");
         exitItem.Click += (_, _) => ExitRequested?.Invoke();
         menu.Items.Add(exitItem);
