@@ -1,0 +1,20 @@
+# Paws & Hearts - Standard Asset License
+
+Copyright (c) 2026 iris (Game Paradise). All rights reserved.
+
+## You MAY
+- Use these assets in **commercial and non-commercial** games and projects, unlimited.
+- Modify, recolor, remix, and combine the assets to fit your project.
+- Use them in an unlimited number of projects, with no royalties and no attribution required
+  (attribution to "Game Paradise" is appreciated but optional).
+
+## You MAY NOT
+- Resell, redistribute, sublicense, or give away the assets **as assets** (e.g. re-uploading
+  this kit, or bundling it into another asset pack), whether modified or not.
+- Use the assets to train or fine-tune generative AI / machine-learning models.
+- Claim authorship of the original assets.
+
+## No warranty
+The assets are provided "as is", without warranty of any kind. Use at your own risk.
+
+Questions / extended license: contact@game-paradise.online

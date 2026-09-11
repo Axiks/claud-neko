@@ -1,0 +1,81 @@
+<Window x:Class="CloudNeko.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="CloudNeko"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        SizeToContent="WidthAndHeight"
+        WindowStartupLocation="Manual"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown">
+
+    <Window.ContextMenu>
+        <ContextMenu>
+            <MenuItem Header="CloudNeko 🐾" IsEnabled="False" FontWeight="Bold"/>
+            <Separator/>
+            <MenuItem Header="Чекає на запит" Click="DemoWaiting_Click"/>
+            <MenuItem Header="Працює" Click="DemoWorking_Click"/>
+            <MenuItem Header="Чекає відповіді" Click="DemoPolling_Click"/>
+            <MenuItem Header="Таску зроблено!" Click="DemoDone_Click"/>
+            <Separator/>
+            <MenuItem Header="Погладити 💗" Click="DemoPet_Click"/>
+            <Separator/>
+            <MenuItem Header="Закрити" Click="Exit_Click"/>
+        </ContextMenu>
+    </Window.ContextMenu>
+
+    <Canvas x:Name="RootCanvas" Width="160" Height="190" Background="Transparent">
+
+        <Border x:Name="Bubble"
+                Canvas.Left="50" Canvas.Top="10"
+                Width="60" Height="32"
+                CornerRadius="11"
+                BorderThickness="2"
+                Padding="2"
+                RenderTransformOrigin="0.5,0.5">
+            <Border.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform x:Name="BubbleScale" ScaleX="1" ScaleY="1"/>
+                    <TranslateTransform x:Name="BubbleTranslate"/>
+                </TransformGroup>
+            </Border.RenderTransform>
+            <Grid>
+                <TextBlock x:Name="BubbleText"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           FontFamily="Consolas" FontWeight="Bold" FontSize="16"
+                           Foreground="White" Text="Zzz"/>
+                <StackPanel x:Name="BubbleDots"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            Visibility="Collapsed">
+                    <Ellipse x:Name="Dot0" Width="6" Height="6" Margin="2,0" Fill="White"/>
+                    <Ellipse x:Name="Dot1" Width="6" Height="6" Margin="2,0" Fill="White"/>
+                    <Ellipse x:Name="Dot2" Width="6" Height="6" Margin="2,0" Fill="White"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Хвостик мовної бульбашки -->
+        <Path x:Name="BubbleTail"
+              Canvas.Left="76" Canvas.Top="41"
+              Data="M0,0 L8,0 L2,8 Z"/>
+
+        <Image x:Name="CharacterImage"
+               Canvas.Left="16" Canvas.Top="56"
+               Width="128" Height="128"
+               RenderOptions.BitmapScalingMode="NearestNeighbor"
+               RenderTransformOrigin="0.5,0.85">
+            <Image.RenderTransform>
+                <TransformGroup>
+                    <ScaleTransform x:Name="CharScale" ScaleX="1" ScaleY="1"/>
+                    <RotateTransform x:Name="CharRotate" Angle="0"/>
+                    <TranslateTransform x:Name="CharTranslate" X="0" Y="0"/>
+                </TransformGroup>
+            </Image.RenderTransform>
+        </Image>
+
+    </Canvas>
+</Window>
