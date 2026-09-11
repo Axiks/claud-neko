@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Windows;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
@@ -10,7 +11,6 @@ public partial class MainWindow : Window
 {
     private static readonly TimeSpan DoneCelebrationDuration = TimeSpan.FromSeconds(3.2);
     private static readonly TimeSpan PetReactionDuration = TimeSpan.FromSeconds(1.6);
-    private const double ClickDragThreshold = 4.0;
 
     private static readonly Dictionary<NekoState, string> PortraitFiles = new()
     {
@@ -39,6 +39,8 @@ public partial class MainWindow : Window
     private bool _wasPetting;
     private NekoState? _displayedPortrait;
     private bool _displayedIsPet;
+    private Point _dragAnchorScreen;
+    private bool _isDragging;
 
     public MainWindow()
     {
@@ -211,16 +213,40 @@ public partial class MainWindow : Window
         BubbleDots.Visibility = showDots ? Visibility.Visible : Visibility.Collapsed;
     }
 
-    private void Window_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    // Перетягування зроблене вручну (без Window.DragMove()) — DragMove() емулює
+    // HTCAPTION-перетягування заголовка, а Windows перехоплює швидкий другий клік у
+    // цій зоні як системний жест і не пропускає його до WPF, через що ClickCount
+    // ніколи не досягав 2. Ручний drag через CaptureMouse не має цієї проблеми.
+    private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        var downPos = PointToScreen(e.GetPosition(this));
-        DragMove();
-        var upPos = PointToScreen(System.Windows.Input.Mouse.GetPosition(this));
-
-        if (Math.Abs(upPos.X - downPos.X) < ClickDragThreshold && Math.Abs(upPos.Y - downPos.Y) < ClickDragThreshold)
+        if (e.ClickCount == 2)
         {
             TriggerPet();
+            return;
         }
+
+        _dragAnchorScreen = PointToScreen(e.GetPosition(this));
+        _isDragging = true;
+        CaptureMouse();
+    }
+
+    private void Window_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (!_isDragging || e.LeftButton != MouseButtonState.Pressed)
+        {
+            return;
+        }
+
+        var current = PointToScreen(e.GetPosition(this));
+        Left += current.X - _dragAnchorScreen.X;
+        Top += current.Y - _dragAnchorScreen.Y;
+        _dragAnchorScreen = current;
+    }
+
+    private void Window_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+    {
+        _isDragging = false;
+        ReleaseMouseCapture();
     }
 
     private void TriggerPet()
@@ -234,19 +260,6 @@ public partial class MainWindow : Window
         _celebrationStartT = _clock.Elapsed.TotalSeconds;
         ApplyBubbleStyle(EffectiveState());
     }
-
-    private void ForceLocalState(NekoState state)
-    {
-        _celebrating = false;
-        _aggregateState = state;
-        ApplyBubbleStyle(EffectiveState());
-    }
-
-    private void DemoWaiting_Click(object sender, RoutedEventArgs e) => ForceLocalState(NekoState.Waiting);
-    private void DemoWorking_Click(object sender, RoutedEventArgs e) => ForceLocalState(NekoState.Working);
-    private void DemoPolling_Click(object sender, RoutedEventArgs e) => ForceLocalState(NekoState.Polling);
-    private void DemoDone_Click(object sender, RoutedEventArgs e) => TriggerDoneCelebration();
-    private void DemoPet_Click(object sender, RoutedEventArgs e) => TriggerPet();
 
     private void Exit_Click(object sender, RoutedEventArgs e)
     {

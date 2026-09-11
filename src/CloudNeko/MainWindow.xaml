@@ -10,18 +10,13 @@
         ResizeMode="NoResize"
         SizeToContent="WidthAndHeight"
         WindowStartupLocation="Manual"
-        MouseLeftButtonDown="Window_MouseLeftButtonDown">
+        MouseLeftButtonDown="Window_MouseLeftButtonDown"
+        MouseMove="Window_MouseMove"
+        MouseLeftButtonUp="Window_MouseLeftButtonUp">
 
     <Window.ContextMenu>
         <ContextMenu>
             <MenuItem Header="CloudNeko 🐾" IsEnabled="False" FontWeight="Bold"/>
-            <Separator/>
-            <MenuItem Header="Чекає на запит" Click="DemoWaiting_Click"/>
-            <MenuItem Header="Працює" Click="DemoWorking_Click"/>
-            <MenuItem Header="Чекає відповіді" Click="DemoPolling_Click"/>
-            <MenuItem Header="Таску зроблено!" Click="DemoDone_Click"/>
-            <Separator/>
-            <MenuItem Header="Погладити 💗" Click="DemoPet_Click"/>
             <Separator/>
             <MenuItem Header="Закрити" Click="Exit_Click"/>
         </ContextMenu>

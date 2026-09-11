@@ -17,12 +17,11 @@ Akari — піксельна неко-дівчина (у стилі тамаго
 підмінити ім'я файлу в `PortraitFiles` (або `PetPortraitFile`) у [MainWindow.xaml.cs](src/CloudNeko/MainWindow.xaml.cs).
 
 Вікно прозоре, без рамки, завжди зверху, не займає місце в панелі задач.
-Перетягується лівою кнопкою миші (звичайний клік без руху — це "погладити", див. нижче),
-ПКМ відкриває меню (для ручного тесту станів і виходу).
+Перетягується лівою кнопкою миші, ПКМ відкриває меню (лише "Закрити").
 
 ### Погладити 💗
 
-Клік по Akari (без перетягування) на ~1.6 сек показує рум'яний портрет (`akari_blush`)
+Подвійний клік по Akari на ~1.6 сек показує рум'яний портрет (`akari_blush`)
 і рожеву бульбашку "♥", після чого сама повертається до поточного робочого стану.
 Той самий ефект викликається ззовні — через CLI/файл стану (див. нижче), значенням `pet`.
 
@@ -34,19 +33,30 @@ Akari — піксельна неко-дівчина (у стилі тамаго
 
 ## Запуск
 
-Готові standalone-файли (не потребують встановленого .NET):
+Готові standalone-файли (не потребують встановленого .NET) — або зібрані самостійно
+(див. "Збірка з сурсів" нижче), або завантажені з GitHub Actions:
 
 ```
 publish\CloudNeko.exe
 ```
 
-Для розробки:
+### Автозапуск разом з Windows (опційно)
+
+Створіть ярлик на `publish\CloudNeko.exe` і покладіть його в папку автозавантаження:
+`Win+R` → `shell:startup`.
+
+## Збірка з сурсів
+
+Потрібен [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) (Windows,
+через WPF-залежність — крос-компіляція з Linux/macOS не підтримується).
+
+Запуск без збірки standalone-файлів (для розробки):
 
 ```
 dotnet run --project src\CloudNeko\CloudNeko.csproj
 ```
 
-Щоб перезібрати обидва standalone-файли після змін:
+Повна збірка обох standalone-файлів (кладе результат у `publish\`):
 
 ```
 dotnet publish src\CloudNeko\CloudNeko.csproj -c Release -r win-x64 --self-contained true -o publish
@@ -57,10 +67,14 @@ dotnet publish src\CloudNeko.Cli\CloudNeko.Cli.csproj -c Release -r win-x64 --se
 затримки на кожен запуск, що відчутно для `CloudNekoCli.exe`, який хуки викликають на
 кожен інструмент. Звичайний self-contained "папкою" стартує в рази швидше.)
 
-### Автозапуск разом з Windows (опційно)
+### Автоматична збірка (GitHub Actions)
 
-Створіть ярлик на `publish\CloudNeko.exe` і покладіть його в папку автозавантаження:
-`Win+R` → `shell:startup`.
+При кожному push у `master` [`.github/workflows/build.yml`](.github/workflows/build.yml)
+на `windows-latest` runner збирає обидва exe тим самим способом, що й вище, і завантажує
+весь `publish\` як build-артефакт. Забрати готовий білд без встановлення .NET у себе:
+GitHub → вкладка **Actions** → останній успішний run → **Artifacts** → `CloudNeko-win-x64`
+(zip з обома exe + залежностями, можна одразу розпакувати й запускати на будь-якому Windows).
+Workflow можна запустити й вручну через `workflow_dispatch`.
 
 ## Керування станом і паралельні сесії
 
