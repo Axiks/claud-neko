@@ -1,9 +1,14 @@
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using Microsoft.Win32;
+using Color = System.Windows.Media.Color;
+using MouseEventArgs = System.Windows.Input.MouseEventArgs;
+using Point = System.Windows.Point;
 
 namespace CloudNeko;
 
@@ -11,6 +16,7 @@ public partial class MainWindow : Window
 {
     private static readonly TimeSpan DoneCelebrationDuration = TimeSpan.FromSeconds(3.2);
     private static readonly TimeSpan PetReactionDuration = TimeSpan.FromSeconds(1.6);
+    private static readonly TimeSpan AutoHideDelay = TimeSpan.FromMinutes(3);
 
     private static readonly Dictionary<NekoState, string> PortraitFiles = new()
     {
@@ -42,6 +48,10 @@ public partial class MainWindow : Window
     private Point _dragAnchor;
     private bool _isDragging;
 
+    private readonly TrayIcon _tray = new();
+    private bool _autoHideEnabled;
+    private double _lastActiveT;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -61,11 +71,34 @@ public partial class MainWindow : Window
         Dot2.RenderTransform = _dot2T;
 
         Loaded += (_, _) => PositionOnScreen();
+        Closed += (_, _) =>
+        {
+            _watcher.Dispose();
+            _tray.Dispose();
+        };
+
+        _tray.ToggleAutoHideRequested += () => Dispatcher.Invoke(ToggleAutoHide);
+        _tray.ToggleAutoStartRequested += () => Dispatcher.Invoke(ToggleAutoStart);
+        _tray.ExitRequested += () => Dispatcher.Invoke(Close);
+        _tray.ShowRequested += () => Dispatcher.Invoke(() =>
+        {
+            if (!IsVisible)
+            {
+                Show();
+            }
+            _lastActiveT = _clock.Elapsed.TotalSeconds;
+        });
 
         _watcher.StateChanged += OnAggregateChanged;
         _watcher.PetRequested += () => Dispatcher.Invoke(TriggerPet);
         _watcher.DoneCelebrationRequested += () => Dispatcher.Invoke(TriggerDoneCelebration);
         _aggregateState = _watcher.ReadCurrent();
+
+        _autoHideEnabled = LoadAutoHideSetting();
+        SyncAutoHideUi();
+        AutoStartMenuItem.IsChecked = IsAutoStartEnabled();
+        _tray.AutoStartChecked = AutoStartMenuItem.IsChecked == true;
+        _lastActiveT = _clock.Elapsed.TotalSeconds;
 
         _tickTimer.Tick += (_, _) => Render();
         _tickTimer.Start();
@@ -125,6 +158,8 @@ public partial class MainWindow : Window
             ApplyBubbleStyle(petting ? null : state);
             _wasPetting = petting;
         }
+
+        UpdateAutoHide(t, petting);
 
         // --- Трансформації портрета ---
         double breatheAmplitude = petting ? 0.05 : 0.02;
@@ -268,9 +303,122 @@ public partial class MainWindow : Window
         ApplyBubbleStyle(EffectiveState());
     }
 
-    private void Exit_Click(object sender, RoutedEventArgs e)
+    /// <summary>
+    /// Коли автопоказ увімкнено: Akari з'являється, щойно хоч одна сесія почала
+    /// працювати/чекати відповіді (або йде святкування/гладження), і ховається,
+    /// якщо після цього минуло <see cref="AutoHideDelay"/> без жодної активності.
+    /// Коли вимкнено — вікно завжди видиме, як і раніше.
+    /// </summary>
+    private void UpdateAutoHide(double t, bool petting)
     {
-        _watcher.Dispose();
-        Application.Current.Shutdown();
+        if (!_autoHideEnabled)
+        {
+            return;
+        }
+
+        bool active = _aggregateState != NekoState.Waiting || _celebrating || petting;
+        if (active)
+        {
+            _lastActiveT = t;
+            if (!IsVisible)
+            {
+                Show();
+            }
+        }
+        else if (IsVisible && t - _lastActiveT > AutoHideDelay.TotalSeconds)
+        {
+            Hide();
+        }
     }
+
+    private void ToggleAutoHide()
+    {
+        _autoHideEnabled = !_autoHideEnabled;
+        SaveAutoHideSetting(_autoHideEnabled);
+        SyncAutoHideUi();
+
+        if (_autoHideEnabled)
+        {
+            // Свіжий відлік з моменту вмикання — щоб не ховалась одразу, якщо зараз простій.
+            _lastActiveT = _clock.Elapsed.TotalSeconds;
+        }
+        else if (!IsVisible)
+        {
+            Show();
+        }
+    }
+
+    private void SyncAutoHideUi()
+    {
+        AutoHideMenuItem.IsChecked = _autoHideEnabled;
+        _tray.AutoHideChecked = _autoHideEnabled;
+    }
+
+    private static bool LoadAutoHideSetting()
+    {
+        try
+        {
+            return File.Exists(SessionPaths.AutoHideSettingPath)
+                && File.ReadAllText(SessionPaths.AutoHideSettingPath).Trim() == "1";
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+    }
+
+    private static void SaveAutoHideSetting(bool enabled)
+    {
+        try
+        {
+            Directory.CreateDirectory(SessionPaths.BaseDirectory);
+            File.WriteAllText(SessionPaths.AutoHideSettingPath, enabled ? "1" : "0");
+        }
+        catch (IOException)
+        {
+            // Не критично — просто не запам'ятається до наступного разу.
+        }
+    }
+
+    private void AutoHideMenuItem_Click(object sender, RoutedEventArgs e) => ToggleAutoHide();
+
+    private const string AutoStartRegistryKeyPath = @"Software\Microsoft\Windows\CurrentVersion\Run";
+    private const string AutoStartRegistryValueName = "CloudNeko";
+
+    private static bool IsAutoStartEnabled()
+    {
+        using var key = Registry.CurrentUser.OpenSubKey(AutoStartRegistryKeyPath, writable: false);
+        return key?.GetValue(AutoStartRegistryValueName) is string;
+    }
+
+    private void ToggleAutoStart()
+    {
+        bool enable = !IsAutoStartEnabled();
+        try
+        {
+            using var key = Registry.CurrentUser.CreateSubKey(AutoStartRegistryKeyPath, writable: true);
+            if (enable)
+            {
+                string exePath = Environment.ProcessPath
+                    ?? System.Reflection.Assembly.GetExecutingAssembly().Location;
+                key.SetValue(AutoStartRegistryValueName, $"\"{exePath}\"");
+            }
+            else
+            {
+                key.DeleteValue(AutoStartRegistryValueName, throwOnMissingValue: false);
+            }
+        }
+        catch (System.Security.SecurityException)
+        {
+            // Немає прав на запис у реєстр (рідкісний випадок для HKCU) — просто не міняємо стан.
+            enable = IsAutoStartEnabled();
+        }
+
+        AutoStartMenuItem.IsChecked = enable;
+        _tray.AutoStartChecked = enable;
+    }
+
+    private void AutoStartMenuItem_Click(object sender, RoutedEventArgs e) => ToggleAutoStart();
+
+    private void Exit_Click(object sender, RoutedEventArgs e) => Close();
 }

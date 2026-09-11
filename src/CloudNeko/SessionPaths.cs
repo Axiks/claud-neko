@@ -18,6 +18,8 @@ public static class SessionPaths
 
     public static string LegacyStateFilePath { get; } = Path.Combine(BaseDirectory, "state.txt");
 
+    public static string AutoHideSettingPath { get; } = Path.Combine(BaseDirectory, "autohide.txt");
+
     public static string SanitizeSessionId(string? raw)
     {
         if (string.IsNullOrWhiteSpace(raw))

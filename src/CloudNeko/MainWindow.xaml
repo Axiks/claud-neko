@@ -18,6 +18,15 @@
         <ContextMenu>
             <MenuItem Header="CloudNeko 🐾" IsEnabled="False" FontWeight="Bold"/>
             <Separator/>
+            <MenuItem x:Name="AutoHideMenuItem"
+                      Header="Автопоказ під час роботи"
+                      IsCheckable="True"
+                      Click="AutoHideMenuItem_Click"/>
+            <MenuItem x:Name="AutoStartMenuItem"
+                      Header="Автозапуск з Windows"
+                      IsCheckable="True"
+                      Click="AutoStartMenuItem_Click"/>
+            <Separator/>
             <MenuItem Header="Закрити" Click="Exit_Click"/>
         </ContextMenu>
     </Window.ContextMenu>
