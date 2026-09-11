@@ -39,7 +39,7 @@ public partial class MainWindow : Window
     private bool _wasPetting;
     private NekoState? _displayedPortrait;
     private bool _displayedIsPet;
-    private Point _dragAnchorScreen;
+    private Point _dragAnchor;
     private bool _isDragging;
 
     public MainWindow()
@@ -217,6 +217,14 @@ public partial class MainWindow : Window
     // HTCAPTION-перетягування заголовка, а Windows перехоплює швидкий другий клік у
     // цій зоні як системний жест і не пропускає його до WPF, через що ClickCount
     // ніколи не досягав 2. Ручний drag через CaptureMouse не має цієї проблеми.
+    //
+    // Важливо: рахуємо зсув у системі координат самого вікна (e.GetPosition(this)),
+    // а НЕ в екранних пікселях (PointToScreen) — Left/Top у WPF задані в device-independent
+    // одиницях (96 DPI), тоді як PointToScreen повертає фізичні пікселі монітора. При
+    // DPI-масштабуванні, відмінному від 100%, змішування цих двох систем координат і
+    // давало невідповідність між рухом курсора та рухом вікна. _dragAnchor свідомо НЕ
+    // оновлюється щокадру — точка прив'язки лишається сталою (сам рух вікна повертає
+    // курсор у ту саму відносну позицію), інакше зсув накопичувався б хибно.
     private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
         if (e.ClickCount == 2)
@@ -225,7 +233,7 @@ public partial class MainWindow : Window
             return;
         }
 
-        _dragAnchorScreen = PointToScreen(e.GetPosition(this));
+        _dragAnchor = e.GetPosition(this);
         _isDragging = true;
         CaptureMouse();
     }
@@ -237,10 +245,9 @@ public partial class MainWindow : Window
             return;
         }
 
-        var current = PointToScreen(e.GetPosition(this));
-        Left += current.X - _dragAnchorScreen.X;
-        Top += current.Y - _dragAnchorScreen.Y;
-        _dragAnchorScreen = current;
+        var current = e.GetPosition(this);
+        Left += current.X - _dragAnchor.X;
+        Top += current.Y - _dragAnchor.Y;
     }
 
     private void Window_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
