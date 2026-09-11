@@ -46,8 +46,17 @@ public sealed class TrayIcon : IDisposable
             ContextMenuStrip = menu,
         };
 
-        // Подвійний клік по іконці в треї — швидкий спосіб повернути приховану Akari.
-        _notifyIcon.DoubleClick += (_, _) => ShowRequested?.Invoke();
+        // Звичайний (лівий) клік по іконці в треї — миттєво повернути приховану Akari.
+        // MouseClick, а не Click/DoubleClick: спрацьовує одразу на один клік, без
+        // затримки очікування другого кліка, і дає розрізнити ліву/праву кнопку явно
+        // (праву й так обробляє ContextMenuStrip сам).
+        _notifyIcon.MouseClick += (_, e) =>
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                ShowRequested?.Invoke();
+            }
+        };
     }
 
     public bool AutoHideChecked

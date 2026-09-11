@@ -80,14 +80,7 @@ public partial class MainWindow : Window
         _tray.ToggleAutoHideRequested += () => Dispatcher.Invoke(ToggleAutoHide);
         _tray.ToggleAutoStartRequested += () => Dispatcher.Invoke(ToggleAutoStart);
         _tray.ExitRequested += () => Dispatcher.Invoke(Close);
-        _tray.ShowRequested += () => Dispatcher.Invoke(() =>
-        {
-            if (!IsVisible)
-            {
-                Show();
-            }
-            _lastActiveT = _clock.Elapsed.TotalSeconds;
-        });
+        _tray.ShowRequested += () => Dispatcher.Invoke(BringToCurrentView);
 
         _watcher.StateChanged += OnAggregateChanged;
         _watcher.PetRequested += () => Dispatcher.Invoke(TriggerPet);
@@ -112,6 +105,56 @@ public partial class MainWindow : Window
         var area = SystemParameters.WorkArea;
         Left = area.Right - Width - 24;
         Top = area.Bottom - Height - 24;
+    }
+
+    /// <summary>
+    /// Клік по іконці в треї — явний сигнал "покажи її мені зараз", тож на відміну
+    /// від пасивного автопоказу тут не просто Show(): переносимо вікно на монітор,
+    /// де зараз курсор (може бути інший фізичний екран, ніж той, де вона висіла), і
+    /// на поточний віртуальний робочий стіл (інакше Show() лишив би її видимою лише
+    /// там, де вікно було створене — Windows не показує вікна з інших столів самі).
+    /// </summary>
+    private void BringToCurrentView()
+    {
+        MoveToScreenUnderCursor();
+
+        var hwnd = new System.Windows.Interop.WindowInteropHelper(this).Handle;
+        if (hwnd != IntPtr.Zero)
+        {
+            VirtualDesktopInterop.MoveToCurrentDesktop(hwnd);
+        }
+
+        if (!IsVisible)
+        {
+            Show();
+        }
+
+        if (WindowState == WindowState.Minimized)
+        {
+            WindowState = WindowState.Normal;
+        }
+
+        Activate();
+        _lastActiveT = _clock.Elapsed.TotalSeconds;
+    }
+
+    /// <summary>
+    /// Переносить вікно на монітор під курсором миші (там, де користувач щойно клікнув
+    /// по трею), використовуючи Forms.Screen для меж монітора в фізичних пікселях і
+    /// DPI поточного вікна для переводу в device-independent одиниці WPF (Left/Top) —
+    /// та сама пастка з одиницями, що й у ручному drag (див. коментар там).
+    /// </summary>
+    private void MoveToScreenUnderCursor()
+    {
+        var cursorPos = System.Windows.Forms.Cursor.Position;
+        var screen = System.Windows.Forms.Screen.FromPoint(cursorPos);
+        var dpi = VisualTreeHelper.GetDpi(this);
+
+        double workRight = screen.WorkingArea.Right / dpi.DpiScaleX;
+        double workBottom = screen.WorkingArea.Bottom / dpi.DpiScaleY;
+
+        Left = workRight - Width - 24;
+        Top = workBottom - Height - 24;
     }
 
     /// <summary>Агрегований стан за всіма активними сесіями (waiting/working/polling).</summary>
