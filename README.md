@@ -70,10 +70,18 @@ dotnet publish src\CloudNeko.Cli\CloudNeko.Cli.csproj -c Release -r win-x64 --se
 ### Автоматична збірка (GitHub Actions)
 
 При кожному push у `master` [`.github/workflows/build.yml`](.github/workflows/build.yml)
-на `windows-latest` runner збирає обидва exe тим самим способом, що й вище, і завантажує
-весь `publish\` як build-артефакт. Забрати готовий білд без встановлення .NET у себе:
-GitHub → вкладка **Actions** → останній успішний run → **Artifacts** → `CloudNeko-win-x64`
-(zip з обома exe + залежностями, можна одразу розпакувати й запускати на будь-якому Windows).
+на `windows-latest` runner збирає обидва exe тим самим способом, що й вище і публікує
+[**GitHub Release**](../../releases/latest) з тегом `v0.1.<номер запуску>`
+(номер завжди зростає — простий автоінкремент без ручного версіонування) та прикріпленим
+`CloudNeko-win-x64.zip` (обидва exe + залежності — розпакувати й одразу запускати на
+будь-якому Windows, .NET встановлювати не треба). Стабільне посилання на найновіший білд:
+
+```
+https://github.com/Axiks/claud-neko/releases/latest/download/CloudNeko-win-x64.zip
+```
+
+Той самий білд додатково лежить і як build-артефакт (Actions → run → Artifacts) —
+зручно для перегляду конкретного run без прив'язки до релізів.
 Workflow можна запустити й вручну через `workflow_dispatch`.
 
 ## Керування станом і паралельні сесії

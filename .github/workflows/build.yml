@@ -5,6 +5,9 @@ on:
     branches: [master]
   workflow_dispatch:
 
+permissions:
+  contents: write # потрібно для створення тегу й релізу
+
 jobs:
   build:
     runs-on: windows-latest
@@ -29,3 +32,22 @@ jobs:
           name: CloudNeko-win-x64
           path: publish/
           if-no-files-found: error
+
+      - name: Compute version
+        id: version
+        shell: pwsh
+        run: |
+          $version = "0.1.${{ github.run_number }}"
+          echo "version=$version" >> $env:GITHUB_OUTPUT
+          echo "tag=v$version" >> $env:GITHUB_OUTPUT
+
+      - name: Zip release archive
+        shell: pwsh
+        run: Compress-Archive -Path publish\* -DestinationPath CloudNeko-win-x64.zip
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: CloudNeko ${{ steps.version.outputs.version }}
+          files: CloudNeko-win-x64.zip
